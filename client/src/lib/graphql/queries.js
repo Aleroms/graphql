@@ -46,10 +46,15 @@ export async function getCompany(id) {
         id
         name
         description
+        job {
+          date
+          id
+          description
+          title
+        }
       }
     }
   `;
-  const data = await client.request(query, { id });
-  console.log(data);
-  return data.company;
+  const { company } = await client.request(query, { id });
+  return company;
 }
