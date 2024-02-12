@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql";
-import { getJob, getJobs, getJobsByCompanyId } from "./db/jobs.js";
+import { createJob, getJob, getJobs, getJobsByCompanyId } from "./db/jobs.js";
 import { getCompany } from "./db/companies.js";
 export const resolvers = {
   Query: {
@@ -17,6 +17,12 @@ export const resolvers = {
         throw notFoundError("company not found with id " + id);
       }
       return company;
+    },
+  },
+  Mutation: {
+    createJob: (_root, {input: { title, description }}) => {
+      const companyId = "FjcJCHJALA4i";
+      return createJob({ companyId, title, description });
     },
   },
 
