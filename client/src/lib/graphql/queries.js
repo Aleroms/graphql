@@ -13,7 +13,6 @@ const httpLink = createHttpLink({ uri: "http://localhost:9000/graphql" });
 const authLink = new ApolloLink((operation, forward) => {
   const token = getAccessToken();
   if (token) {
-    // return { Authorization: `Bearer ${token}` };
     operation.setContext({
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -24,7 +23,6 @@ const authLink = new ApolloLink((operation, forward) => {
 const apolloClient = new ApolloClient({
   link: concat(authLink, httpLink),
   cache: new InMemoryCache(),
-  headers: () => {},
 });
 
 //fetch jobs
@@ -42,26 +40,31 @@ export async function getJobs() {
       }
     }
   `;
-  const { data } = await apolloClient.query({ query });
+  const { data } = await apolloClient.query({
+    query,
+    fetchPolicy: "network-only",
+  });
   return data.jobs;
 }
-
-export async function getJob(id) {
-  const query = gql`
-    query JobById($id: ID!) {
-      job(id: $id) {
+const jobByIdQuery = gql`
+  query JobById($id: ID!) {
+    job(id: $id) {
+      id
+      date
+      company {
         id
-        date
-        company {
-          id
-          name
-        }
-        title
-        description
+        name
       }
+      title
+      description
     }
-  `;
-  const { data } = await apolloClient.query({ query, variables: { id } });
+  }
+`;
+export async function getJob(id) {
+  const { data } = await apolloClient.query({
+    query: jobByIdQuery,
+    variables: { id },
+  });
   return data.job;
 }
 
@@ -89,13 +92,26 @@ export async function createJob({ title, description }) {
     mutation createJob($input: CreateJobInput!) {
       job: createJob(input: $input) {
         id
+        date
+        company {
+          id
+          name
+        }
+        title
+        description
       }
     }
   `;
-
   const { data } = await apolloClient.mutate({
     mutation,
     variables: { input: { title, description } },
+    update: (cache, { data }) => {
+      cache.writeQuery({
+        query: jobByIdQuery,
+        variables: { id: data.job.id },
+        data,
+      });
+    },
   });
   return data.job;
 }
