@@ -1,5 +1,14 @@
 import { GraphQLClient, gql } from "graphql-request";
-const client = new GraphQLClient("http://localhost:9000/graphql");
+import { getAccessToken } from "../auth";
+const client = new GraphQLClient("http://localhost:9000/graphql", {
+  headers: () => {
+    const token = getAccessToken();
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+    return {};
+  },
+});
 
 //fetch jobs
 export async function getJobs() {

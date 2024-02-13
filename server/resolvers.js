@@ -28,17 +28,39 @@ export const resolvers = {
   },
   Mutation: {
     //third parameter is context
-    createJob: (_root, { input: { title, description } }, { auth }) => {
-      if (!auth) {
+    createJob: (_root, { input: { title, description } }, { user }) => {
+      console.log("NEW LINE", user);
+      if (!user) {
         throw unAuthorizedError("missing authentication");
       }
       //code is executed if user is authorized
-      const companyId = "FjcJCHJALA4i";
-      return createJob({ companyId, title, description });
+      return createJob({ companyId: user.companyId, title, description });
     },
-    deleteJob: (_, { id }) => deleteJob(id),
-    updateJob: (_, { input: { id, title, description } }) =>
-      updateJob({ id, title, description }),
+    deleteJob: async (_, { id }, { user }) => {
+      if (!user) {
+        throw unAuthorizedError("Missing authentication");
+      }
+      const job = await deleteJob(id, user.companyId);
+      if (!job) {
+        throw notFoundError("No Job found with id " + id);
+      }
+      return job;
+    },
+    updateJob: async (_, { input: { id, title, description } }, { user }) => {
+      if (!user) {
+        throw unAuthorizedError("Missing authentication");
+      }
+      const job = await updateJob({
+        id,
+        title,
+        description,
+        companyId: user.companyId,
+      });
+      if (!job) {
+        throw notFoundError("No Job found with id " + id);
+      }
+      return job;
+    },
   },
 
   Job: {
