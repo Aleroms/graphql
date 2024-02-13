@@ -1,19 +1,36 @@
-import { GraphQLClient, gql } from "graphql-request";
+import {
+  ApolloClient,
+  ApolloLink,
+  InMemoryCache,
+  concat,
+  createHttpLink,
+  gql,
+} from "@apollo/client";
 import { getAccessToken } from "../auth";
-const client = new GraphQLClient("http://localhost:9000/graphql", {
-  headers: () => {
-    const token = getAccessToken();
-    if (token) {
-      return { Authorization: `Bearer ${token}` };
-    }
-    return {};
-  },
+
+const httpLink = createHttpLink({ uri: "http://localhost:9000/graphql" });
+
+const authLink = new ApolloLink((operation, forward) => {
+  const token = getAccessToken();
+  if (token) {
+    // return { Authorization: `Bearer ${token}` };
+    operation.setContext({
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+  return forward(operation);
+});
+
+const apolloClient = new ApolloClient({
+  link: concat(authLink, httpLink),
+  cache: new InMemoryCache(),
+  headers: () => {},
 });
 
 //fetch jobs
 export async function getJobs() {
   const query = gql`
-    query {
+    query Jobs {
       jobs {
         id
         date
@@ -25,8 +42,8 @@ export async function getJobs() {
       }
     }
   `;
-  const { jobs } = await client.request(query);
-  return jobs;
+  const { data } = await apolloClient.query({ query });
+  return data.jobs;
 }
 
 export async function getJob(id) {
@@ -44,8 +61,8 @@ export async function getJob(id) {
       }
     }
   `;
-  const { job } = await client.request(query, { id });
-  return job;
+  const { data } = await apolloClient.query({ query, variables: { id } });
+  return data.job;
 }
 
 export async function getCompany(id) {
@@ -64,8 +81,8 @@ export async function getCompany(id) {
       }
     }
   `;
-  const { company } = await client.request(query, { id });
-  return company;
+  const { data } = await apolloClient.query({ query, variables: { id } });
+  return data.company;
 }
 export async function createJob({ title, description }) {
   const mutation = gql`
@@ -75,8 +92,10 @@ export async function createJob({ title, description }) {
       }
     }
   `;
-  const { job } = await client.request(mutation, {
-    input: { title, description },
+
+  const { data } = await apolloClient.mutate({
+    mutation,
+    variables: { input: { title, description } },
   });
-  return job;
+  return data.job;
 }
