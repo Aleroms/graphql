@@ -10,7 +10,7 @@ import {
 import { getCompany } from "./db/companies.js";
 export const resolvers = {
   Query: {
-    jobs: () => getJobs(),
+    jobs: (_root, { limit, offset }) => getJobs(limit, offset),
     job: async (_, { id }) => {
       const job = await getJob(id);
       if (!job) {
