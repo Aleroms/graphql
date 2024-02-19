@@ -8,7 +8,9 @@ import {
 } from "@apollo/client";
 import { getAccessToken } from "../auth";
 
-const httpLink = createHttpLink({ uri: "http://localhost:9000/graphql" });
+const httpLink = createHttpLink({
+  uri: "https://graphqljobboard.netlify.app/graphql",
+});
 
 const authLink = new ApolloLink((operation, forward) => {
   const token = getAccessToken();
